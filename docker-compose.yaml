@@ -1,0 +1,83 @@
+---
+version: "3.8"
+
+x-networks: &networks
+  - main-overlay-network
+
+x-spark-common:
+  &spark-common
+  image: spark-base:3.3.1
+  # build:
+  #   context: .
+  #   dockerfile: base.Dockerfile
+  networks: *networks
+  env_file:
+    - ./spark.env
+    - ./hadoop.env
+
+x-spark-worker-common:
+  &spark-worker-common
+  <<: *spark-common
+  command: worker
+  ports:
+    # SPARK_WORKER_WEBUI_PORT
+    - target: 8081
+      published: 8081
+      mode: host
+  volumes:
+    - type: bind
+      source: ${APPS_LOGS}/spark/worker
+      target: /tmp/logs
+  depends_on:
+    - spark-master
+
+
+services:
+
+  spark-master:
+    <<: *spark-common
+    # SPARK_MASTER_HOST
+    container_name: spark-master
+    command: master
+    ports:
+      # SPARK_MASTER_WEBUI_PORT
+      - target: 8080
+        published: 8090
+        mode: host
+      # SPARK_MASTER_PORT
+      - target: 7077
+        published: 7077
+        mode: host
+    volumes:
+      - type: bind
+        source: ${APPS_LOGS}/spark/master
+        target: /tmp/logs
+      - type: bind
+        source: ${APPS_WORKSPACE}
+        target: /workspace
+  
+  spark-worker-1:
+    <<: *spark-worker-common
+    container_name: spark-worker-1
+
+  spark-historyserver:
+    <<: *spark-common
+    container_name: spark-historyserver
+    command: historyserver
+    ports:
+      # SPARK_HISTORY_SERVER_WEBUI_PORT
+      - target: 18080
+        published: 18080
+        mode: host
+    volumes:
+      - type: bind
+        source: ${APPS_LOGS}/spark/historyserver
+        target: /tmp/logs
+    depends_on:
+      - spark-master
+
+networks:
+  main-overlay-network:
+    external: true
+    driver: overlay
+    attachable: true

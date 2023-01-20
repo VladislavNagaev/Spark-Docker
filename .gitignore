@@ -1,0 +1,10 @@
+
+.git/
+
+.cache
+
+.env
+
+.*.swp
+
+data/
