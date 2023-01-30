@@ -1,20 +1,24 @@
 ---
 version: "3.8"
 
+x-networks: &networks
+  - main-overlay-network
+
 x-spark-common:
   &spark-common
   image: spark-base:3.3.1
   # build:
   #   context: .
   #   dockerfile: base.Dockerfile
+  networks: *networks
   restart: always
   env_file:
-    - ./spark.env
-    - ./hadoop.env
+    - ${APPS_ENV}/spark.env
+    - ${APPS_ENV}/hadoop.env
   volumes:
     - &spark-common-volumes-logs
-      type: volume
-      source: spark-volume
+      type: bind
+      source: ${APPS_LOGS}/spark
       target: /tmp/logs
 
 x-spark-worker-common:
@@ -52,7 +56,7 @@ services:
     volumes:
       - *spark-common-volumes-logs
       - type: bind
-        source: ./data
+        source: ${APPS_WORKSPACE}
         target: /workspace
   
   spark-worker-1:
@@ -91,7 +95,9 @@ services:
     depends_on:
       - spark-master
 
-
-volumes:
-  spark-volume:
   
+networks:
+  main-overlay-network:
+    external: true
+    driver: overlay
+    attachable: true

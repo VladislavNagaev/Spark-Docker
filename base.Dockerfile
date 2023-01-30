@@ -3,75 +3,84 @@ FROM --platform=linux/amd64 hadoop-base:3.3.4
 
 LABEL maintainer="Vladislav Nagaev <vladislav.nagaew@gmail.com>"
 
+# Изменение рабочего пользователя
+USER root
+
+# Выбор рабочей директории
+WORKDIR /
+
 ENV \ 
     # Задание версий сервисов
     SPARK_VERSION=3.3.1 \
-    HADOOP_FOR_SPARK_VERSION=without-hadoop
-
-ENV \
     # Задание домашних директорий
-    SPARK_HOME=${APPS_HOME}/spark \
-    PYSPARK_PYTHON=/usr/bin/python3 \
-    # Полные наименования сервисов
-    SPARK_NAME=spark-${SPARK_VERSION}-bin-${HADOOP_FOR_SPARK_VERSION}
+    SPARK_HOME=/opt/spark
 
 ENV \
+    # Полные наименования сервисов
+    SPARK_NAME=spark-${SPARK_VERSION} \
     # Директории конфигураций
-    HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native \
-    HADOOP_OPTS="-Djava.library.path=${HADOOP_HOME}/lib/native" \
-    JAVA_LIBRARY_PATH=${HADOOP_HOME}/lib/native:${JAVA_LIBRARY_PATH} \
-    LD_LIBRARY_PATH=${HADOOP_HOME}/lib/native:${LD_LIBRARY_PATH} \
     SPARK_CONF_DIR=${SPARK_HOME}/conf \
-    SPARK_DIST_CLASSPATH="${HADOOP_CONF_DIR}\
-:${HADOOP_HOME}/share/hadoop/tools/lib/*\
-:${HADOOP_HOME}/share/hadoop/common/lib/*\
-:${HADOOP_HOME}/share/hadoop/common/*\
-:${HADOOP_HOME}/share/hadoop/hdfs\
-:${HADOOP_HOME}/share/hadoop/hdfs/lib/*\
-:${HADOOP_HOME}/share/hadoop/hdfs/*\
-:${HADOOP_HOME}/share/hadoop/mapreduce/lib/*\
-:${HADOOP_HOME}/share/hadoop/mapreduce/*\
-:${HADOOP_HOME}/share/hadoop/yarn\
-:${HADOOP_HOME}/share/hadoop/yarn/lib/*\
-:${HADOOP_HOME}/share/hadoop/yarn/*" \
     # URL-адреса для скачивания
-    SPARK_URL=https://downloads.apache.org/spark/spark-${SPARK_VERSION}/${SPARK_NAME}.tgz \
+    SPARK_URL=https://github.com/apache/spark/archive/refs/tags/v${SPARK_VERSION}.tar.gz \
     # Обновление переменных путей
-    PATH=${PATH}:${SPARK_HOME}/bin:${SPARK_HOME}/sbin \
-    PYTHONPATH=${PYTHONPATH}:${SPARK_HOME}/python
-
+    PATH=${SPARK_HOME}/bin:${SPARK_HOME}/sbin:${PATH}
 
 RUN \
     # --------------------------------------------------------------------------
+    # Подготовка shell-скриптов
+    # --------------------------------------------------------------------------
+    # Сборка Apache Spark
+    echo \
+'''#!/bin/bash \n\
+SPARK_SOURCE_PATH="${1:-}" \n\
+echo "Spark building started ..." \n\
+owd="$(pwd)" \n\
+cd ${SPARK_SOURCE_PATH} \n\
+./build/mvn -Pscala-2.12 -Pyarn -Phive -Phive-thriftserver -Dhadoop.version=${HADOOP_VERSION} -DskipTests clean package \n\
+cd "${owd}" \n\
+echo "Spark building completed!" \n\
+''' > ${ENTRYPOINT_DIRECTORY}/spark-building.sh && \
+    cat ${ENTRYPOINT_DIRECTORY}/spark-building.sh && \
+    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Настройка прав доступа скопированных файлов/директорий
+    # --------------------------------------------------------------------------
+    # Директория/файл entrypoint
+    chown -R ${USER}:${GID} ${ENTRYPOINT_DIRECTORY} && \
+    chmod -R a+x ${ENTRYPOINT_DIRECTORY} && \
+    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
     # Установка Apache Spark
     # --------------------------------------------------------------------------
-    # Скачивание GPG-ключа
-    curl --remote-name --location https://downloads.apache.org/spark/KEYS && \
-    # Установка gpg-ключа
-    gpg --import KEYS && \
-    # Скачивание архива Apache Spark
-    curl --fail --show-error --location ${SPARK_URL} --output /tmp/${SPARK_NAME}.tgz && \
-    # Скачивание PGP-ключа
-    curl --fail --show-error --location ${SPARK_URL}.asc --output /tmp/${SPARK_NAME}.tgz.asc && \
-    # Верификация ключа шифрования
-    gpg --verify /tmp/${SPARK_NAME}.tgz.asc && \
-    # Распаковка архива Apache Spark в рабочую папку
-    tar -xf /tmp/${SPARK_NAME}.tgz -C ${APPS_HOME}/ && \
-    # Удаление исходного архива и ключа шифрования
-    rm /tmp/${SPARK_NAME}.tgz* && \
+    # Скачивание архива с исходным кодом Apache Spark из ветки master
+    curl --fail --show-error --location ${SPARK_URL} --output /tmp/${SPARK_NAME}.tar.gz && \
+    # Распаковка архива с исходным кодом Apache Spark в рабочую папку
+    tar -xf /tmp/${SPARK_NAME}.tar.gz -C $(dirname ${SPARK_HOME})/ && \
+    # Удаление исходного архива
+    rm /tmp/${SPARK_NAME}.tar.gz* && \
     # Создание символической ссылки на Apache Spark
-    ln -s ${APPS_HOME}/${SPARK_NAME} ${SPARK_HOME} && \
-    # Создание файла конфигурации
-    touch ${SPARK_CONF_DIR}/spark-defaults.conf && \
+    ln -s $(dirname ${SPARK_HOME})/${SPARK_NAME} ${SPARK_HOME} && \
+    # Сборка Apache Spark
+    "${ENTRYPOINT_DIRECTORY}/spark-building.sh" ${SPARK_HOME} && \
     # Рабочая директория Apache Spark
-    mkdir -p ${SPARK_HOME}/work && \
-    mkdir -p ${SPARK_HOME}/logs && \
     chown -R ${USER}:${GID} ${SPARK_HOME} && \
-    chmod -R a+rwx ${SPARK_HOME}
+    chmod -R a+rwx ${SPARK_HOME} && \
+    # Smoke test
+    spark-submit --version && \
+    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------
+    # Удаление неактуальных пакетов, директорий, очистка кэша
+    # --------------------------------------------------------------------------
+    rm --recursive  /root/.m2/repository && \
+    apt --yes autoremove && \
+    rm --recursive --force /var/lib/apt/lists/*
     # --------------------------------------------------------------------------
 
 # Копирование файлов проекта
-COPY ./entrypoint/* /entrypoint/
+COPY ./entrypoint/* ${ENTRYPOINT_DIRECTORY}/
+
+# Выбор рабочей директории
+WORKDIR ${WORK_DIRECTORY}
 
 # Точка входа
 ENTRYPOINT ["/bin/bash", "/entrypoint/spark-entrypoint.sh"]
