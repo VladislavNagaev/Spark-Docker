@@ -6,7 +6,7 @@ spark-termination() {
     source /entrypoint/spark-termination.sh $COMMAND
 }
 
-source /entrypoint/spark-wait_for_it.sh
+source /entrypoint/wait_for_it.sh
 
 source /entrypoint/hadoop-configure.sh
 
