@@ -6,12 +6,7 @@ Spark Docker image built on top of [hadoop-base:3.3.4](https://github.com/Vladis
 
 Build image:
 ~~~
-make --jobs=$(nproc --all) --file Makefile 
-~~~
-
-Prepare directories for data:
-~~~
-mkdir -p ./data
+make --file Makefile 
 ~~~
 
 Depoyment of containers:

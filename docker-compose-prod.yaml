@@ -1,8 +1,10 @@
 ---
 version: "3.8"
 
+
 x-networks: &networks
   - main-overlay-network
+
 
 x-spark-common:
   &spark-common
@@ -11,7 +13,6 @@ x-spark-common:
   #   context: .
   #   dockerfile: base.Dockerfile
   networks: *networks
-  restart: always
   env_file:
     - ${APPS_ENV}/spark.env
     - ${APPS_ENV}/hadoop.env
@@ -20,6 +21,8 @@ x-spark-common:
       type: bind
       source: ${APPS_LOGS}/spark
       target: /tmp/logs
+  restart: always
+
 
 x-spark-worker-common:
   &spark-worker-common
@@ -95,7 +98,7 @@ services:
     depends_on:
       - spark-master
 
-  
+
 networks:
   main-overlay-network:
     external: true

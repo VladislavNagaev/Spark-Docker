@@ -7,7 +7,8 @@ x-spark-common:
   # build:
   #   context: .
   #   dockerfile: base.Dockerfile
-  restart: always
+  networks:
+    - main-network
   env_file:
     - ./spark.env
     - ./hadoop.env
@@ -16,6 +17,7 @@ x-spark-common:
       type: volume
       source: spark-volume
       target: /tmp/logs
+  restart: always
 
 x-spark-worker-common:
   &spark-worker-common
@@ -92,6 +94,13 @@ services:
       - spark-master
 
 
+networks:
+  main-network:
+    name: main-network
+    external: false
+    driver: bridge
+    attachable: false
+
+
 volumes:
   spark-volume:
-  
