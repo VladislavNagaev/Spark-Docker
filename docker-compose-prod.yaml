@@ -12,6 +12,7 @@ x-spark-common:
   # build:
   #   context: .
   #   dockerfile: base.Dockerfile
+  hostname: spark
   networks: *networks
   env_file:
     - ${APPS_ENV}/spark.env

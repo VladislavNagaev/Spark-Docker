@@ -1,103 +1,101 @@
 #!/bin/bash
 
-echo "Spark-node configuration started ..."
+echo -e "${blue_b}Spark-node configuration started ...${reset_font}";
 
 
 function configure_conffile() {
 
-    local path=$1
-    local envPrefix=$2
+    local path=$1;
+    local envPrefix=$2;
 
-    local var
-    local value
+    local var;
+    local value;
     
-    echo "Configuring $path"
+    echo -e "${cyan_b}Configuring $path${reset_font}";
 
     for c in `printenv | perl -sne 'print "$1 " if m/^${envPrefix}_(.+?)=.*/' -- -envPrefix=$envPrefix`; do 
 
-        name=`echo ${c} | perl -pe 's/___/-/g; s/__/@/g; s/_/./g; s/@/_/g;'`
-        var="${envPrefix}_${c}"
-        value=${!var}
+        name=`echo ${c} | perl -pe 's/___/-/g; s/__/@/g; s/_/./g; s/@/_/g;'`;
+        var="${envPrefix}_${c}";
+        value=${!var};
 
-        echo " - Setting $name=$value"
-        echo "${name} ${value}" | tee -a $path > /dev/null
+        echo -e "${green} - Setting $name=$value${reset_font}";
+        echo -e "\n${name} ${value}" | tee -a ${path} > /dev/null;
 
-    done
-}
+    done;
+};
 
 
 function configure_envfile() {
 
-    local path=$1
-    local -n envArray=$2
+    local path=$1;
+    local -n envArray=$2;
 
-    local name
-    local value
+    local name;
+    local value;
 
-    echo "Configuring ${path}"
+    echo -e "${cyan_b}Configuring ${path}";
 
-    for c in "${envArray[@]}"
-    do
+    for c in "${envArray[@]}"; do
 
-        name=${c}
-        value=${!c}
+        name=${c};
+        value=${!c};
 
         if [[ -n ${value} ]]; then
-            echo " - Setting ${name}=${value}"
-            echo "export ${name}=${value}" >> ${path}
-        fi
+            echo -e "${green} - Setting ${name}=${value}${reset_font}";
+            echo -e "\nexport ${name}=${value}" | tee -a ${path} > /dev/null;
+        fi;
     
-    done
-}
-
+    done;
+};
 
 
 if ! [ -z ${SPARK_HOME+x} ]; then
     SPARK_CLASSPATH=${SPARK_HOME}/jars/*:${SPARK_CLASSPATH};
-    echo "SPARK_CLASSPATH=${SPARK_CLASSPATH}";
-fi
+    echo -e "${green}SPARK_CLASSPATH=${SPARK_CLASSPATH}${reset_font}";
+fi;
 
 if ! [ -z ${HADOOP_CONF_DIR+x} ]; then
     SPARK_CLASSPATH=${HADOOP_CONF_DIR}:${SPARK_CLASSPATH};
-    echo "SPARK_CLASSPATH=${SPARK_CLASSPATH}";
-fi
+    echo -e "${green}SPARK_CLASSPATH=${SPARK_CLASSPATH}${reset_font}";
+fi;
 
 if ! [ -z ${SPARK_CONF_DIR+x} ]; then
     SPARK_CLASSPATH=${SPARK_CONF_DIR}:${SPARK_CLASSPATH};
-    echo "SPARK_CLASSPATH=${SPARK_CLASSPATH}";
+    echo -e "${green}SPARK_CLASSPATH=${SPARK_CLASSPATH}${reset_font}";
 elif ! [ -z ${SPARK_HOME+x} ]; then
     SPARK_CLASSPATH=${SPARK_HOME}/conf:${SPARK_CLASSPATH};
-    echo "SPARK_CLASSPATH=${SPARK_CLASSPATH}";
-fi
+    echo -e "${green}SPARK_CLASSPATH=${SPARK_CLASSPATH}${reset_font}";
+fi;
 
 
 if ! [ -z ${SPARK_HOME/lib/native+x} ]; then
     SPARK_DAEMON_JAVA_OPTS="-Djava.library.path=${HADOOP_HOME}/lib/native";
-    echo "SPARK_DAEMON_JAVA_OPTS=${SPARK_DAEMON_JAVA_OPTS}";
-fi
+    echo -e "${green}SPARK_DAEMON_JAVA_OPTS=${SPARK_DAEMON_JAVA_OPTS}${reset_font}";
+fi;
 
 
 if [ -n ${HADOOP_HOME} ] && [ -z ${SPARK_DIST_CLASSPATH} ]; then
     SPARK_DIST_CLASSPATH=$(${HADOOP_HOME}/bin/hadoop classpath);
-    echo "SPARK_DIST_CLASSPATH=${SPARK_DIST_CLASSPATH}";
-fi
+    echo -e "${green}SPARK_DIST_CLASSPATH=${SPARK_DIST_CLASSPATH}${reset_font}";
+fi;
 
 
 if ! [ -z ${SPARK_PID_DIR+x} ]; then
     mkdir -p ${SPARK_PID_DIR};
-    echo "SPARK_PID_DIR=${SPARK_PID_DIR}"
-fi
+    echo -e "${green}SPARK_PID_DIR=${SPARK_PID_DIR}${reset_font}";
+fi;
 
 if ! [ -z ${SPARK_LOG_DIR+x} ]; then
     mkdir -p ${SPARK_LOG_DIR};
-    echo "SPARK_LOG_DIR=${SPARK_LOG_DIR}"
-fi
+    echo -e "${green}SPARK_LOG_DIR=${SPARK_LOG_DIR}${reset_font}";
+fi;
 
 
 if ! [ -z ${SPARK_CONF_DIR+x} ]; then
     touch ${SPARK_CONF_DIR}/spark-defaults.conf;
     configure_conffile ${SPARK_CONF_DIR}/spark-defaults.conf SPARK_DEFAULTS;
-fi
+fi;
 
 if ! [ -z ${SPARK_CONF_DIR+x} ]; then
 
@@ -116,9 +114,9 @@ if ! [ -z ${SPARK_CONF_DIR+x} ]; then
     touch ${SPARK_CONF_DIR}/spark-env.sh;
     configure_envfile ${SPARK_CONF_DIR}/spark-env.sh SparkEnv;
 
-fi
+fi;
 
-# PYTHONPATH=${SPARK_HOME}/python:${PYTHONPATH}
-# PYSPARK_PYTHON=/usr/bin/python3 \
+# PYTHONPATH=${SPARK_HOME}/python:${PYTHONPATH};
+# PYSPARK_PYTHON=/usr/bin/python3;
 
-echo "Spark-node configuration completed!"
+echo -e "${blue_b}Spark-node configuration completed!${reset_font}";
