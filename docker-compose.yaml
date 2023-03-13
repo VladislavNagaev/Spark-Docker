@@ -7,7 +7,6 @@ x-spark-common:
   # build:
   #   context: .
   #   dockerfile: base.Dockerfile
-  hostname: spark
   networks:
     - main-network
   env_file:
@@ -42,6 +41,7 @@ services:
     <<: *spark-common
     # SPARK_MASTER_HOST
     container_name: spark-master
+    hostname: spark-master
     command: master
     ports:
       # SPARK_MASTER_WEBUI_PORT
@@ -61,6 +61,7 @@ services:
   spark-worker-1:
     <<: *spark-worker-common
     container_name: spark-worker-1
+    hostname: spark-worker-1
     environment:
       <<: *spark-worker-common-environment
       SPARK_WORKER_PORT: 38112
@@ -69,6 +70,7 @@ services:
   spark-historyserver:
     <<: *spark-common
     container_name: spark-historyserver
+    hostname: spark-historyserver
     command: historyserver
     ports:
       # SPARK_HISTORY_SERVER_WEBUI_PORT
@@ -84,6 +86,7 @@ services:
   spark-thriftserver:
     <<: *spark-common
     container_name: spark-thriftserver
+    hostname: spark-thriftserver
     command: thriftserver
     ports:
       - target: 10000
