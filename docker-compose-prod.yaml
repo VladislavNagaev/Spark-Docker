@@ -12,6 +12,8 @@ x-spark-common:
   # build:
   #   context: .
   #   dockerfile: base.Dockerfile
+  labels:
+    autoheal: 'true'
   networks: *networks
   env_file:
     - ${APPS_ENV}/spark.env
