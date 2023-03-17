@@ -36,6 +36,12 @@ x-spark-worker-common:
   environment:
     &spark-worker-common-environment
     SERVICE_PRECONDITION: "spark-master:7077"
+  healthcheck:
+    test: ["CMD", "nc", "-vz", "localhost", "8081"]
+    interval: 10s
+    timeout: 5s
+    retries: 5
+    start_period: 10s
   depends_on:
     - spark-master
 
@@ -62,7 +68,13 @@ services:
       - type: bind
         source: ${APPS_WORKSPACE}
         target: /workspace
-  
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "8080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   spark-worker-1:
     <<: *spark-worker-common
     container_name: spark-worker-1
@@ -87,6 +99,12 @@ services:
     depends_on:
       - spark-master
       - spark-worker-1
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "18080"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   spark-thriftserver:
     <<: *spark-common
@@ -101,6 +119,12 @@ services:
       SERVICE_PRECONDITION: "spark-master:7077"
     depends_on:
       - spark-master
+    healthcheck:
+      test: ["CMD", "nc", "-vz", "localhost", "10000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 
 networks:
